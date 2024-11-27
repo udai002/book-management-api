@@ -1,51 +1,34 @@
-from fastapi import FastAPI , Request
-from fastapi.staticfiles import StaticFiles
-from fastapi.templating import Jinja2Templates
-from fastapi.responses import HTMLResponse
+from fastapi import FastAPI
 from pymongo import MongoClient
-from fastapi.encoders import jsonable_encoder
-from fastapi.responses import JSONResponse
-
+from schemas.post import all_books , individual_books
+from models.book import Books
 # karumuriudaisai002
 # d7PsKXVZ4lRw87EX
 app = FastAPI()
-app.mount('/static' , StaticFiles(directory='static') , name="static")
-templates = Jinja2Templates(directory='templates')
 
-conn = MongoClient("mongodb+srv://karumuriudaisai002:d7PsKXVZ4lRw87EX@cluster0.w6lat9a.mongodb.net/?authMechanism=DEFAULT")
 
-@app.get("/" , response_class=HTMLResponse)
-async def read_item(request:Request): 
-    doc = conn.posts.posts.find({})
-    user_name = ""
-    for items in doc:
-        user_name = items['user']
-    return templates.TemplateResponse("index.html" ,{"request":request , "user":user_name})
+conn = MongoClient("mongodb+srv://karumuriudaisai002:ky9KEuzCnFcOPaku@cluster0.k5uzy.mongodb.net/")
+db = conn.books
+collection = db['books']
 
-@app.get("/page", response_class=HTMLResponse)
-async def read_items(request: Request):
-    return templates.TemplateResponse("page.html", {"request": request})
 
 @app.get('/books')
-async def getAllBook(request:Request):
-        allBook =  conn.book.find({})
-        return allBook
+async def getAllBook():
+        allBook =  collection.find({})
+        return all_books(allBook)
 
 @app.post('/books')
-async def addBooks(request:Request):
-     addBook = conn.book.create_collection({})
-     jsonObject = jsonable_encoder({"data":addBook})
-     return JSONResponse(jsonObject)
+async def addBooks(new_books:Books):
+    addBook = collection.insert_one(dict(new_books))     
+    return individual_books(addBook)
 
 @app.delete('/book/:id')
-async def deleteBook(request:Request):
-     deleteBook = conn.book.drop_collection({})
-     JSONResponseObject = jsonable_encoder({"status":"true"})
-     return JSONResponse(JSONResponseObject)
+async def deleteBook(id):
+     deleteBook = collection.drop_collection({id})
+     
 
 @app.get('/book/:id')
 async def getOneBook(id):
-     getABook = conn.book.get_collection({})
-     jsonObject = jsonable_encoder({"status":"true" , "data":getABook})
-     return jsonObject
+     getABook = collection.get_collection({id})
+     
 
